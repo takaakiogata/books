@@ -10,13 +10,14 @@ class CreateBooksTable extends Migration
     {
         Schema::create('books', function (Blueprint $table) {
             $table->id();
-            $table->string('title');        // 本のタイトル
-            $table->string('author');       // 著者
-            $table->string('publisher');    // 出版社
+            $table->string('title');        
+            $table->string('author');       
+            $table->string('publisher');    
             $table->smallInteger('published_year');
-            $table->integer('price');       // 価格
-            $table->text('comment')->nullable(); // コメント
-            $table->string('image_path')->nullable(); // 画像のパス
+            $table->integer('price');       
+            $table->text('comment')->nullable(); 
+            $table->string('image_path')->nullable(); 
+            $table->unsignedTinyInteger('rating')->nullable(); 
             $table->timestamps();
             $table->softDeletes();
         });

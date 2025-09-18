@@ -9,63 +9,82 @@
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white shadow-sm sm:rounded-lg p-6">
 
-                {{-- 実装段階では action を更新用のルートに差し替えます --}}
-                <form action="#" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('books.update', $book->id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 
-                    <div class="grid grid-cols-1 gap-4">
-                        <label class="block">
-                            <span class="text-gray-700">タイトル</span>
-                            <input type="text" name="title" value="{{ $book['title'] }}" class="mt-1 block w-full border rounded px-3 py-2" />
+                    <label class="block">
+                        <span class="text-gray-700">タイトル</span>
+                        <input type="text" name="title" value="{{ old('title', $book->title) }}" class="mt-1 block w-full border rounded px-3 py-2" />
+                    </label>
+
+                    <label class="block">
+                        <span class="text-gray-700">著者</span>
+                        <input type="text" name="author" value="{{ old('author', $book->author) }}" class="mt-1 block w-full border rounded px-3 py-2" />
+                    </label>
+
+                    <div class="flex gap-2">
+                        <label class="flex-1">
+                            <span class="text-gray-700">発売年</span>
+                            <input type="number" name="published_year" value="{{ old('published_year', $book->published_year) }}" class="mt-1 block w-full border rounded px-3 py-2" />
                         </label>
 
-                        <label class="block">
-                            <span class="text-gray-700">著者</span>
-                            <input type="text" name="author" value="{{ $book['author'] }}" class="mt-1 block w-full border rounded px-3 py-2" />
+                        <label class="w-40">
+                            <span class="text-gray-700">価格 (円)</span>
+                            <input type="number" name="price" value="{{ old('price', $book->price) }}" class="mt-1 block w-full border rounded px-3 py-2" />
                         </label>
+                    </div>
 
-                        <div class="flex gap-2">
-                            <label class="flex-1">
-                                <span class="text-gray-700">発売年</span>
-                                <input type="number" name="years" value="{{ $book['years'] }}" class="mt-1 block w-full border rounded px-3 py-2" />
-                            </label>
+                    <div class="flex gap-2">
+                        <p>ジャンル</p><br>
+                        @php
+                        $genreOptions = ['SF','ミステリー','ホラー','ファンタジー'];
+                        @endphp
 
-                            <label class="w-40">
-                                <span class="text-gray-700">価格 (円)</span>
-                                <input type="number" name="price" value="{{ $book['price'] }}" class="mt-1 block w-full border rounded px-3 py-2" />
-                            </label>
-                        </div>
+                        @for ($i = 0; $i < 3; $i++)
+                            <select name="genres[]" class="border rounded px-3 py-2 flex-1">
+                            <option value="">選択してください</option>
+                            @foreach($genreOptions as $genreName)
+                            <option value="{{ $genreName }}">{{ $genreName }}</option>
+                            @endforeach
+                            </select>
+                            @endfor
+                    </div>
+                    <div>
+                        <label for="rating" class="font-semibold">評価（1〜5）</label>
+                        <select name="rating" id="rating" class="border rounded px-3 py-2 w-40">
+                            <option value="">選択してください</option>
+                            @for ($i = 1; $i <= 5; $i++)
+                                <option value="{{ $i }}" @if(old('rating', $book->rating ?? '') == $i) selected @endif>
+                                {{ $i }} ★
+                                </option>
+                                @endfor
+                        </select>
+                        @error('rating')
+                        <p class="text-red-500 text-sm">{{ $message }}</p>
+                        @enderror
+                    </div>
 
-                        <label class="block">
-                            <span class="text-gray-700">ジャンル（複数選択可）</span>
-                            <div class="mt-2 flex flex-wrap gap-2">
-                                @foreach($genres as $g)
-                                <label class="inline-flex items-center gap-2 px-2 py-1 border rounded">
-                                    <input type="checkbox" name="genres[]" value="{{ $g }}" {{ in_array($g, $book['genres']) ? 'checked' : '' }}>
-                                    <span class="text-sm">{{ $g }}</span>
-                                </label>
-                                @endforeach
-                            </div>
-                        </label>
 
-                        <label class="block">
-                            <span class="text-gray-700">感想</span>
-                            <textarea name="comment" class="mt-1 block w-full border rounded px-3 py-2" rows="4">{{ $book['comment'] }}</textarea>
-                        </label>
+                    <label class="block">
+                        <span class="text-gray-700">感想</span>
+                        <textarea name="comment" class="mt-1 block w-full border rounded px-3 py-2" rows="4">{{ old('comment', $book->comment) }}</textarea>
+                    </label>
 
-                        <label class="block">
-                            <span class="text-gray-700">画像アップロード</span>
-                            <input type="file" name="image" class="mt-1 block w-full" />
-                        </label>
+                    <label class="block">
+                        <span class="text-gray-700">画像アップロード</span>
+                        <input type="file" name="image" class="mt-1 block w-full" />
+                        @if($book->image_path)
+                        <img src="{{ asset('storage/' . $book->image_path) }}" class="mt-2 h-32">
+                        @endif
+                    </label>
 
-                        <div class="flex gap-2 mt-4">
-                            <button type="submit" class="px-4 py-2 border rounded hover:bg-gray-100">保存</button>
-                            <a href="{{ route('books.show', $book['id']) }}" class="px-4 py-2 border rounded hover:bg-gray-100">キャンセル</a>
-                        </div>
-
+                    <div class="flex gap-2 mt-4">
+                        <button type="submit" class="px-4 py-2 border rounded hover:bg-gray-100">保存</button>
+                        <a href="{{ route('books.show', $book->id) }}" class="px-4 py-2 border rounded hover:bg-gray-100">キャンセル</a>
                     </div>
                 </form>
+
 
             </div>
         </div>

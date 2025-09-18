@@ -50,6 +50,63 @@ class BookController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'title'          => 'required|string|max:255',
+            'author'         => 'nullable|string|max:255',
+            'publisher'      => 'nullable|string|max:255',
+            'published_year' => 'nullable|integer',
+            'price'          => 'nullable|integer',
+            'comment'        => 'nullable|string',
+            'image'          => 'nullable|image|max:2048',
+            'genres'         => 'nullable|array',
+            'rating'         => 'nullable|integer|min:1|max:5', // ★追加
+        ]);
+
+
+        // Bookテーブル用データだけ抽出
+        $bookData = $validated;
+        unset($bookData['genres']);
+
+        // 画像処理
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('books', 'public');
+            $bookData['image_path'] = $path;
+        }
+
+        // Book作成
+        $book = Book::create($bookData);
+
+        // ジャンル紐付け
+        if (!empty($validated['genres'])) {
+            $genreIds = [];
+            foreach ($validated['genres'] as $genreName) {
+                if (empty($genreName)) continue;
+                $genre = Genre::firstOrCreate(['name' => $genreName]);
+                $genreIds[] = $genre->id;
+            }
+            $book->genres()->sync($genreIds);
+        }
+
+        return redirect()->route('books.index')->with('success', '本を登録しました');
+    }
+
+    // 詳細表示
+    public function show(Book $book)
+    {
+        // genresはリレーション経由で取得可能
+        return view('books.show', compact('book'));
+    }
+
+    // 編集フォーム
+    public function edit(Book $book)
+    {
+        $genres = Genre::orderBy('name')->pluck('name')->toArray();
+        return view('books.edit', compact('book', 'genres'));
+    }
+
+    // 更新処理
+    public function update(Request $request, Book $book)
+    {
+        $validated = $request->validate([
             'title' => 'required|string|max:255',
             'author' => 'required|string|max:255',
             'publisher' => 'required|string|max:255',
@@ -60,27 +117,40 @@ class BookController extends Controller
             'genres' => 'nullable|array',
         ]);
 
-        // 画像アップロード
+        // 画像更新
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('books', 'public');
-            $validated['image_path'] = $path;
+            if ($book->image_path) {
+                Storage::disk('public')->delete($book->image_path);
+            }
+            $validated['image_path'] = $request->file('image')->store('books', 'public');
         }
 
-        // Book作成
-        $book = Book::create($validated);
+        // 本データ更新
+        $book->update($validated);
 
-        // ジャンル紐付け（文字列をIDに変換しながら自動作成）
+        // ジャンル更新
         if (!empty($validated['genres'])) {
             $genreIds = [];
             foreach ($validated['genres'] as $genreName) {
-                if (empty($genreName)) continue; // 選択されていない場合はスキップ
+                if (empty($genreName)) continue;
                 $genre = Genre::firstOrCreate(['name' => $genreName]);
                 $genreIds[] = $genre->id;
             }
             $book->genres()->sync($genreIds);
+        } else {
+            $book->genres()->sync([]); // 選択なしの場合は解除
         }
 
+        return redirect()->route('books.show', $book->id)->with('success', '本を更新しました');
+    }
 
-        return redirect()->route('books.index')->with('success', '本を登録しました');
+    // 削除処理
+    public function destroy(Book $book)
+    {
+        if ($book->image_path) {
+            Storage::disk('public')->delete($book->image_path);
+        }
+        $book->delete();
+        return redirect()->route('books.index')->with('success', '本を削除しました');
     }
 }

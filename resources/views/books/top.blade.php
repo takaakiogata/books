@@ -25,19 +25,30 @@
                     <div class="border rounded-lg p-4 flex flex-col">
                         <div class="w-full h-48 bg-gray-100 mb-4 flex items-center justify-center">
                             @if($book->image_path)
-                                <img src="{{ asset('storage/' . $book->image_path) }}" alt="{{ $book->title }}" class="h-full w-full object-cover">
+                            <img src="{{ asset('storage/' . $book->image_path) }}" alt="{{ $book->title }}" class="h-full w-full object-cover">
                             @else
-                                <span class="text-gray-400">画像</span>
+                            <span class="text-gray-400">画像</span>
                             @endif
                         </div>
 
                         <h3 class="text-lg font-semibold">{{ $book->title }}</h3>
                         <p class="text-sm text-gray-600">{{ $book->author }}</p>
+
                         <p class="mt-2 font-bold">¥{{ number_format($book->price) }}</p>
+
+                        {{-- ★評価の表示 --}}
+                        <p class="text-yellow-500 mt-1">
+                            @if($book->rating)
+                            {{ str_repeat('★', $book->rating) }}
+                            {{ str_repeat('☆', 5 - $book->rating) }}
+                            @else
+                            <span class="text-gray-400">未評価</span>
+                            @endif
+                        </p>
 
                         <div class="mt-4 flex flex-wrap gap-2">
                             @foreach($book->genres as $genre)
-                                <span class="px-2 py-1 border rounded-full text-sm">{{ $genre->name }}</span>
+                            <span class="px-2 py-1 border rounded-full text-sm">{{ $genre->name }}</span>
                             @endforeach
                         </div>
 
