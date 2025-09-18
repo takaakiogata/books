@@ -19,13 +19,10 @@ class Book extends Model
         'price',
         'comment',
         'image_path',
-        'rating',   // ★追加
+        'rating',   
     ];
 
 
-    /**
-     * ジャンルとの多対多リレーション
-     */
     public function genres()
     {
         return $this->belongsToMany(Genre::class, 'book_genre', 'book_id', 'genre_id')

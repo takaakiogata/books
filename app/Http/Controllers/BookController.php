@@ -37,7 +37,7 @@ class BookController extends Controller
             $query->where('rating', $request->rating);
         }
 
-        // ページネーション（1ページ15件 = 横3×縦5）
+        // ページネーション（1ページ15件）
         $books = $query->paginate(15)->appends($request->all());
 
         return view('books.top', compact('books', 'genres'));
@@ -64,7 +64,7 @@ class BookController extends Controller
             'comment'        => 'nullable|string',
             'image'          => 'nullable|image|max:2048',
             'genres'         => 'nullable|array',
-            'rating'         => 'nullable|integer|min:1|max:5', // ★追加
+            'rating'         => 'nullable|integer|min:1|max:5', 
         ]);
 
 
@@ -98,7 +98,7 @@ class BookController extends Controller
     // 詳細表示
     public function show(Book $book)
     {
-        // genresはリレーション経由で取得可能
+        // genresはリレーション経由で取得
         return view('books.show', compact('book'));
     }
 
@@ -125,7 +125,7 @@ class BookController extends Controller
             'rating'         => 'nullable|integer|min:1|max:5',
         ]);
 
-        // Bookテーブル用データだけ抽出（genresは中間テーブル用なので除外）
+        // Bookテーブル用データのみ抽出（genresは中間テーブル用なので除外）
         $bookData = $validated;
         unset($bookData['genres']);
 

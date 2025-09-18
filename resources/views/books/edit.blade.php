@@ -1,95 +1,112 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            編集：{{ $book->title }}
+        <h2 class="font-semibold text-2xl text-green-800 leading-tight flex items-center gap-2">
+            ✏️ 本の編集
         </h2>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white shadow-sm sm:rounded-lg p-6">
+    <div class="py-12 bg-gray-50">
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white shadow-xl rounded-2xl p-8">
 
-                <form action="{{ route('books.update', $book->id) }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('books.update', $book->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                     @csrf
                     @method('PUT')
 
-                    <label class="block">
-                        <span class="text-gray-700">タイトル</span>
-                        <input type="text" name="title" value="{{ old('title', $book->title) }}" class="mt-1 block w-full border rounded px-3 py-2" />
-                        @error('title') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-                    </label>
-
-                    <label class="block">
-                        <span class="text-gray-700">著者</span>
-                        <input type="text" name="author" value="{{ old('author', $book->author) }}" class="mt-1 block w-full border rounded px-3 py-2" />
-                        @error('author') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-                    </label>
-
-                    <div class="flex gap-2">
-                        <label class="flex-1">
-                            <span class="text-gray-700">発売年</span>
-                            <input type="number" name="published_year" value="{{ old('published_year', $book->published_year) }}" class="mt-1 block w-full border rounded px-3 py-2" />
-                            @error('published_year') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-                        </label>
-
-                        <label class="w-40">
-                            <span class="text-gray-700">価格 (円)</span>
-                            <input type="number" name="price" value="{{ old('price', $book->price) }}" class="mt-1 block w-full border rounded px-3 py-2" />
-                            @error('price') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-                        </label>
+                    {{-- タイトル --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">タイトル</label>
+                        <input type="text" name="title" value="{{ old('title', $book->title) }}"
+                               class="mt-1 w-full border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        @error('title')
+                            <p class="text-red-500 text-sm">{{ $message }}</p>
+                        @enderror
                     </div>
 
-                    <div class="flex gap-2">
-                        @php
-                            $genreOptions = ['SF','ミステリー','ホラー','ファンタジー'];
-                            // Bookに紐づくジャンル名配列（順番は保存時のままではない可能性がある）
-                            $selectedGenres = $book->genres->pluck('name')->toArray();
-                        @endphp
-
-                        @for ($i = 0; $i < 3; $i++)
-                            <select name="genres[]" class="border rounded px-3 py-2 flex-1">
-                                <option value="">選択してください</option>
-                                @foreach($genreOptions as $genreName)
-                                    <option value="{{ $genreName }}"
-                                        @if(old("genres.$i", $selectedGenres[$i] ?? '') === $genreName) selected @endif>
-                                        {{ $genreName }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        @endfor
+                    {{-- 著者 --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">著者</label>
+                        <input type="text" name="author" value="{{ old('author', $book->author) }}"
+                               class="mt-1 w-full border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
                     </div>
 
-                    <div class="mt-4">
-                        <label for="rating" class="font-semibold">評価（1〜5）</label>
-                        <select name="rating" id="rating" class="border rounded px-3 py-2 w-40">
-                            <option value="">選択してください</option>
+                    {{-- 出版社 --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">出版社</label>
+                        <input type="text" name="publisher" value="{{ old('publisher', $book->publisher) }}"
+                               class="mt-1 w-full border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+
+                    {{-- 発売年・価格 --}}
+                    <div class="flex gap-4">
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700">発売年</label>
+                            <input type="text" name="published_year" value="{{ old('published_year', $book->published_year) }}"
+                                   class="mt-1 w-full border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">価格</label>
+                            <input type="number" name="price" value="{{ old('price', $book->price) }}"
+                                   class="mt-1 w-40 border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                        </div>
+                    </div>
+
+                    {{-- ジャンル --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">ジャンル</label>
+                        <div class="flex gap-2">
+                            @php $genreOptions = ['SF','ミステリー','ホラー','ファンタジー']; @endphp
+                            @for ($i = 0; $i < 3; $i++)
+                                <select name="genres[]" class="border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                    <option value="">選択してください</option>
+                                    @foreach($genreOptions as $genreName)
+                                        <option value="{{ $genreName }}" 
+                                            @if(isset($book->genres[$i]) && $book->genres[$i]->name == $genreName) selected @endif>
+                                            {{ $genreName }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @endfor
+                        </div>
+                    </div>
+
+                    {{-- 評価 --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">評価</label>
+                        <select name="rating" class="border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            <option value="">未評価</option>
                             @for ($i = 1; $i <= 5; $i++)
-                                <option value="{{ $i }}" @if(old('rating', $book->rating ?? '') == $i) selected @endif>
-                                    {{ $i }} ★
+                                <option value="{{ $i }}" @if(old('rating', $book->rating) == $i) selected @endif>
+                                    {{ str_repeat('★', $i) }}
                                 </option>
                             @endfor
                         </select>
-                        @error('rating') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
                     </div>
 
-                    <label class="block mt-4">
-                        <span class="text-gray-700">感想</span>
-                        <textarea name="comment" class="mt-1 block w-full border rounded px-3 py-2" rows="4">{{ old('comment', $book->comment) }}</textarea>
-                        @error('comment') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-                    </label>
+                    {{-- 感想 --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">感想</label>
+                        <textarea name="comment" rows="4"
+                                  class="mt-1 w-full border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">{{ old('comment', $book->comment) }}</textarea>
+                    </div>
 
-                    <label class="block mt-4">
-                        <span class="text-gray-700">画像アップロード</span>
-                        <input type="file" name="image" class="mt-1 block w-full" />
+                    {{-- 画像 --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">画像</label>
+                        <input type="file" name="image" class="mt-1">
                         @if($book->image_path)
-                            <img src="{{ asset('storage/' . $book->image_path) }}" class="mt-2 h-32">
+                            <div class="mt-2">
+                                <img src="{{ asset('storage/' . $book->image_path) }}" alt="{{ $book->title }}" class="h-32 rounded">
+                            </div>
                         @endif
-                        @error('image') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
-                    </label>
+                    </div>
 
-                    <div class="flex gap-2 mt-4">
-                        <button type="submit" class="px-4 py-2 border rounded hover:bg-gray-100">保存</button>
-                        <a href="{{ route('books.index') }}" class="px-4 py-2 border rounded hover:bg-gray-100">戻る</a>
+                    {{-- ボタン --}}
+                    <div class="flex gap-3">
+                        <a href="{{ route('books.index') }}" 
+                           class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition">戻る</a>
+                        <button type="submit" 
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow transition">更新</button>
                     </div>
                 </form>
 
