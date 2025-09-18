@@ -33,11 +33,17 @@ class BookController extends Controller
                 $q->where('id', $request->genre);
             });
         }
+        if ($request->filled('rating')) {
+            $query->where('rating', $request->rating);
+        }
 
-        $books = $query->get();
+        // ページネーション（1ページ15件 = 横3×縦5）
+        $books = $query->paginate(15)->appends($request->all());
 
         return view('books.top', compact('books', 'genres'));
     }
+
+
 
     // 新規登録フォーム
     public function create()
@@ -107,42 +113,48 @@ class BookController extends Controller
     public function update(Request $request, Book $book)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'author' => 'required|string|max:255',
-            'publisher' => 'required|string|max:255',
-            'published_year' => 'required|integer',
-            'price' => 'required|integer',
-            'comment' => 'nullable|string',
-            'image' => 'nullable|image|max:2048',
-            'genres' => 'nullable|array',
+            'title'          => 'required|string|max:255',
+            'author'         => 'nullable|string|max:255',
+            'publisher'      => 'nullable|string|max:255',
+            'published_year' => 'nullable|integer',
+            'price'          => 'nullable|integer',
+            'comment'        => 'nullable|string',
+            'image'          => 'nullable|image|max:2048',
+            'genres'         => 'nullable|array',
+            'genres.*'       => 'nullable|string',
+            'rating'         => 'nullable|integer|min:1|max:5',
         ]);
+
+        // Bookテーブル用データだけ抽出（genresは中間テーブル用なので除外）
+        $bookData = $validated;
+        unset($bookData['genres']);
 
         // 画像更新
         if ($request->hasFile('image')) {
             if ($book->image_path) {
                 Storage::disk('public')->delete($book->image_path);
             }
-            $validated['image_path'] = $request->file('image')->store('books', 'public');
+            $bookData['image_path'] = $request->file('image')->store('books', 'public');
         }
 
         // 本データ更新
-        $book->update($validated);
+        $book->update($bookData);
 
-        // ジャンル更新
+        // ジャンル更新（選択が無ければ空配列でsyncして解除）
+        $genreIds = [];
         if (!empty($validated['genres'])) {
-            $genreIds = [];
             foreach ($validated['genres'] as $genreName) {
                 if (empty($genreName)) continue;
                 $genre = Genre::firstOrCreate(['name' => $genreName]);
                 $genreIds[] = $genre->id;
             }
-            $book->genres()->sync($genreIds);
-        } else {
-            $book->genres()->sync([]); // 選択なしの場合は解除
         }
+        $book->genres()->sync($genreIds);
 
-        return redirect()->route('books.show', $book->id)->with('success', '本を更新しました');
+        // 更新後は一覧に戻す（top）
+        return redirect()->route('books.index')->with('success', '本を更新しました');
     }
+
 
     // 削除処理
     public function destroy(Book $book)
