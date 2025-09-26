@@ -19,7 +19,8 @@ class Book extends Model
         'price',
         'comment',
         'image_path',
-        'rating',   
+        'rating',
+        'user_id',
     ];
 
 
@@ -27,5 +28,13 @@ class Book extends Model
     {
         return $this->belongsToMany(Genre::class, 'book_genre', 'book_id', 'genre_id')
             ->withTimestamps();
+    }
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class);
+    }
+    public function favoritedBy()
+    {
+        return $this->belongsToMany(User::class, 'favorites')->withTimestamps();
     }
 }

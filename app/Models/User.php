@@ -9,8 +9,19 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
+
+    public function books()
+    {
+        return $this->hasMany(Book::class);
+    }
+
+
+    public function favorites()
+    {
+        return $this->belongsToMany(Book::class, 'favorites')->withTimestamps();
+    }
+
 
     /**
      * The attributes that are mass assignable.

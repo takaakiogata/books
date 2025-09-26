@@ -10,12 +10,28 @@ use Illuminate\Support\Facades\Storage;
 class BookController extends Controller
 {
     // 本一覧
+    // 省略: namespace と use 宣言はファイル冒頭の既存のまま
+
     public function index(Request $request)
     {
+        // ジャンル一覧
         $genres = Genre::orderBy('name')->get();
 
-        $query = Book::with('genres');
+        // ログインユーザーの本を基本クエリにセット（ジャンルはwithで先読み）
+        $query = Book::with('genres')->where('user_id', auth()->id());
 
+        // --- お気に入りフィルター追加 ---
+        $favoriteBookIds = [];
+        if (auth()->check()) {
+            $user = auth()->user();
+            $favoriteBookIds = $user->favorites()->pluck('book_id')->toArray();
+
+            if ($request->filled('filter') && $request->filter === 'favorites') {
+                $query->whereIn('id', $favoriteBookIds);
+            }
+        }
+
+        // 検索フィルタ
         if ($request->filled('keyword')) {
             $query->where('title', 'like', '%' . $request->keyword . '%');
         }
@@ -37,11 +53,25 @@ class BookController extends Controller
             $query->where('rating', $request->rating);
         }
 
-        // ページネーション（1ページ15件）
+        // --- ソート処理 ---
+        $sortField = $request->input('sort_field', 'created_at'); // デフォルト: 登録順
+        $sortOrder = $request->input('sort_order', 'desc');       // デフォルト: 降順
+
+        $allowedFields = ['created_at', 'rating', 'price', 'title'];
+        $allowedOrders = ['asc', 'desc'];
+
+        if (!in_array($sortField, $allowedFields)) $sortField = 'created_at';
+        if (!in_array($sortOrder, $allowedOrders)) $sortOrder = 'desc';
+
+        $query->orderBy($sortField, $sortOrder);
+
+        // ページネーション（検索クエリを維持）
         $books = $query->paginate(15)->appends($request->all());
 
-        return view('books.top', compact('books', 'genres'));
+        // ビューへ渡す
+        return view('books.top', compact('books', 'genres', 'favoriteBookIds', 'sortField', 'sortOrder'));
     }
+
 
 
 
@@ -53,6 +83,7 @@ class BookController extends Controller
     }
 
     // 新規登録処理
+    // store
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -64,22 +95,20 @@ class BookController extends Controller
             'comment'        => 'nullable|string',
             'image'          => 'nullable|image|max:2048',
             'genres'         => 'nullable|array',
-            'rating'         => 'nullable|integer|min:1|max:5', 
+            'rating'         => 'nullable|integer|min:1|max:5',
         ]);
 
-
-        // Bookテーブル用データだけ抽出
         $bookData = $validated;
         unset($bookData['genres']);
 
-        // 画像処理
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('books', 'public');
             $bookData['image_path'] = $path;
         }
 
-        // Book作成
-        $book = Book::create($bookData);
+        $book = new Book($bookData);
+        $book->user_id = auth()->id();
+        $book->save();
 
         // ジャンル紐付け
         if (!empty($validated['genres'])) {
@@ -95,6 +124,7 @@ class BookController extends Controller
         return redirect()->route('books.index')->with('success', '本を登録しました');
     }
 
+
     // 詳細表示
     public function show(Book $book)
     {
@@ -103,15 +133,27 @@ class BookController extends Controller
     }
 
     // 編集フォーム
+
     public function edit(Book $book)
     {
+        if ($book->user_id !== auth()->id()) {
+            abort(403, 'この本の編集権限がありません。');
+        }
+
         $genres = Genre::orderBy('name')->pluck('name')->toArray();
         return view('books.edit', compact('book', 'genres'));
     }
 
+
     // 更新処理
+    // update
     public function update(Request $request, Book $book)
     {
+        if ($book->user_id !== auth()->id()) {
+            abort(403, 'この本の更新権限がありません。');
+        }
+
+        // （バリデーション・画像処理・更新処理は元のまま）
         $validated = $request->validate([
             'title'          => 'required|string|max:255',
             'author'         => 'nullable|string|max:255',
@@ -125,11 +167,9 @@ class BookController extends Controller
             'rating'         => 'nullable|integer|min:1|max:5',
         ]);
 
-        // Bookテーブル用データのみ抽出（genresは中間テーブル用なので除外）
         $bookData = $validated;
         unset($bookData['genres']);
 
-        // 画像更新
         if ($request->hasFile('image')) {
             if ($book->image_path) {
                 Storage::disk('public')->delete($book->image_path);
@@ -137,10 +177,8 @@ class BookController extends Controller
             $bookData['image_path'] = $request->file('image')->store('books', 'public');
         }
 
-        // 本データ更新
         $book->update($bookData);
 
-        // ジャンル更新（選択が無ければ空配列でsyncして解除）
         $genreIds = [];
         if (!empty($validated['genres'])) {
             foreach ($validated['genres'] as $genreName) {
@@ -151,14 +189,19 @@ class BookController extends Controller
         }
         $book->genres()->sync($genreIds);
 
-        // 更新後は一覧に戻す（top）
         return redirect()->route('books.index')->with('success', '本を更新しました');
     }
+
+
 
 
     // 削除処理
     public function destroy(Book $book)
     {
+        if ($book->user_id !== auth()->id()) {
+            abort(403, 'この本の削除権限がありません。');
+        }
+
         if ($book->image_path) {
             Storage::disk('public')->delete($book->image_path);
         }

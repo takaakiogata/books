@@ -10,14 +10,15 @@ class CreateBooksTable extends Migration
     {
         Schema::create('books', function (Blueprint $table) {
             $table->id();
-            $table->string('title');        
-            $table->string('author');       
-            $table->string('publisher');    
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('title');
+            $table->string('author');
+            $table->string('publisher');
             $table->smallInteger('published_year');
-            $table->integer('price');       
-            $table->text('comment')->nullable(); 
-            $table->string('image_path')->nullable(); 
-            $table->unsignedTinyInteger('rating')->nullable(); 
+            $table->integer('price');
+            $table->text('comment')->nullable();
+            $table->string('image_path')->nullable();
+            $table->unsignedTinyInteger('rating')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
